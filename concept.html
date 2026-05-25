@@ -2,52 +2,27 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>canvas-mcp concept</title>
-  <link rel="stylesheet" href="concept.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>canvas-mcp</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { height: 100vh; display: flex; flex-direction: column; font-family: sans-serif; }
+    #mount { flex: 1; }
+  </style>
 </head>
 <body>
 
-  <div id="drop-zone">
-    <p>Drop an image here</p>
-    <p>or click to browse</p>
-    <p>or paste with Ctrl+V / Cmd+V</p>
-  </div>
+  <div id="mount"></div>
 
-  <p id="hint">Supports PNG, JPEG, GIF, WebP</p>
-
-  <input type="file" id="file-input" accept="image/*">
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@excalidraw/excalidraw/dist/excalidraw.production.min.js"></script>
 
   <script>
-    const zone = document.getElementById('drop-zone');
-    const fileInput = document.getElementById('file-input');
-
-    function showImage(file) {
-      if (!file || !file.type.startsWith('image/')) return;
-      const url = URL.createObjectURL(file);
-      zone.innerHTML = '';
-      const img = document.createElement('img');
-      img.src = url;
-      zone.appendChild(img);
-    }
-
-    // Click to browse
-    zone.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', () => showImage(fileInput.files[0]));
-
-    // Drag and drop
-    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
-    zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
-    zone.addEventListener('drop', e => {
-      e.preventDefault();
-      zone.classList.remove('dragover');
-      showImage(e.dataTransfer.files[0]);
-    });
-
-    // Paste
-    document.addEventListener('paste', e => {
-      const item = [...e.clipboardData.items].find(i => i.type.startsWith('image/'));
-      if (item) showImage(item.getAsFile());
-    });
+    // Step 1 verification — open DevTools console to confirm all three load
+    console.log('React:',        typeof React        !== 'undefined' ? React.version          : 'MISSING');
+    console.log('ReactDOM:',     typeof ReactDOM     !== 'undefined' ? ReactDOM.version        : 'MISSING');
+    console.log('ExcalidrawLib:', typeof ExcalidrawLib !== 'undefined' ? Object.keys(ExcalidrawLib).join(', ') : 'MISSING');
   </script>
 
 </body>
