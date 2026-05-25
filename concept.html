@@ -4,17 +4,17 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>canvas-mcp</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { height: 100vh; display: flex; flex-direction: column; font-family: sans-serif; }
-    #mount { flex: 1; }
-  </style>
+  <link rel="stylesheet" href="concept.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.17.6/dist/excalidraw.min.css">
 </head>
 <body>
 
+  <div id="hint-bar"></div>
   <div id="mount"></div>
-
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.17.6/dist/excalidraw.min.css">
+  <div id="action-bar">
+    <span id="status"></span>
+    <button id="send-btn">Send to Claude</button>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.production.min.js"
           onerror="console.error('FAILED to load React')"></script>
@@ -24,30 +24,47 @@
           onerror="console.error('FAILED to load ExcalidrawLib')"></script>
 
   <script>
-    console.log('React:',         typeof React         !== 'undefined' ? React.version : 'MISSING');
-    console.log('ReactDOM:',      typeof ReactDOM      !== 'undefined' ? 'ok'          : 'MISSING');
-    console.log('ExcalidrawLib:', typeof ExcalidrawLib !== 'undefined' ? 'ok'          : 'MISSING');
-
-    if (typeof ExcalidrawLib === 'undefined') {
-      document.getElementById('mount').textContent = 'ExcalidrawLib failed to load — check console';
+    const hint = new URLSearchParams(window.location.search).get('hint');
+    const hintBar = document.getElementById('hint-bar');
+    if (hint) {
+      hintBar.textContent = hint;
     } else {
-      let excalidrawAPI = null;
-
-      try {
-        ReactDOM.createRoot(document.getElementById('mount')).render(
-          React.createElement(ExcalidrawLib.Excalidraw, {
-            excalidrawAPI: (api) => {
-              excalidrawAPI = api;
-              console.log('Excalidraw API ready');
-            }
-          })
-        );
-        console.log('render() called');
-      } catch (e) {
-        console.error('render failed:', e);
-        document.getElementById('mount').textContent = 'render failed — check console';
-      }
+      hintBar.style.display = 'none';
     }
+
+    let excalidrawAPI = null;
+
+    ReactDOM.createRoot(document.getElementById('mount')).render(
+      React.createElement(ExcalidrawLib.Excalidraw, {
+        excalidrawAPI: (api) => { excalidrawAPI = api; }
+      })
+    );
+
+    const btn = document.getElementById('send-btn');
+    const status = document.getElementById('status');
+
+    btn.addEventListener('click', async () => {
+      btn.disabled = true;
+      status.textContent = 'Exporting…';
+
+      const blob = await ExcalidrawLib.exportToBlob({
+        elements: excalidrawAPI.getSceneElements(),
+        appState: { ...excalidrawAPI.getAppState(), exportBackground: true },
+        files: excalidrawAPI.getFiles(),
+        mimeType: 'image/png',
+      });
+
+      const buffer = await blob.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      let binary = '';
+      for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+      const base64 = btoa(binary);
+
+      status.textContent = `PNG ready — ${(blob.size / 1024).toFixed(1)} KB`;
+      console.log('base64 PNG length:', base64.length, '| first 80 chars:', base64.slice(0, 80));
+
+      btn.disabled = false;
+    });
   </script>
 
 </body>
