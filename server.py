@@ -1,5 +1,6 @@
 import asyncio
 import pathlib
+import urllib.parse
 import webbrowser
 
 from aiohttp import web
@@ -10,6 +11,8 @@ from mcp.server.stdio import stdio_server
 BASE_DIR = pathlib.Path(__file__).parent
 
 app = Server("canvas-mcp")
+
+_session_active = False
 
 
 # ---------------------------------------------------------------------------
@@ -94,25 +97,39 @@ async def list_tools() -> list[types.Tool]:
 
 @app.call_tool()
 async def call_tool(name: str, arguments: dict) -> list[types.ContentBlock]:
+    global _session_active
+
     if name != "open_canvas":
         raise ValueError(f"Unknown tool: {name}")
 
-    hint = (arguments or {}).get("hint", "")
-    url = ""
+    if _session_active:
+        raise RuntimeError(
+            "A canvas session is already open. "
+            "Please submit or close the existing canvas before opening a new one."
+        )
+
+    _session_active = True
     runner = None
 
     try:
         runner, host, port, result_future = await start_canvas_server()
-        url = f"http://{host}:{port}/"
-        if hint:
-            url += f"?hint={hint}"
+
+        hint = (arguments or {}).get("hint", "")
+        qs = ("?" + urllib.parse.urlencode({"hint": hint})) if hint else ""
+        url = f"http://{host}:{port}/{qs}"
 
         webbrowser.open(url)
 
-        base64_png = await asyncio.wait_for(result_future, timeout=600)
+        try:
+            base64_png = await asyncio.wait_for(result_future, timeout=600)
+        except asyncio.TimeoutError:
+            raise RuntimeError(
+                "Canvas timed out after 600 seconds with no submission."
+            )
     finally:
         if runner:
             await stop_canvas_server(runner)
+        _session_active = False
 
     return [
         types.ImageContent(type="image", data=base64_png, mimeType="image/png")
