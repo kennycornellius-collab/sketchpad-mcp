@@ -10,7 +10,16 @@ from mcp.server.stdio import stdio_server
 
 BASE_DIR = pathlib.Path(__file__).parent
 
-app = Server("canvas-mcp")
+app = Server(
+    "canvas-mcp",
+    instructions=(
+        "This server opens a drawing canvas in the user's browser and returns the sketch "
+        "to the agent. Use open_canvas to receive the raw image, or describe_sketch to "
+        "receive a text description. Invoke either tool when the user's visual intent is "
+        "ambiguous, when they want to sketch a UI layout or diagram, annotate an image, "
+        "or communicate anything that is faster to draw than to describe in words."
+    ),
+)
 
 _session_active = False
 
