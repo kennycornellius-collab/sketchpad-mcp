@@ -91,15 +91,34 @@ async def list_tools() -> list[types.Tool]:
                     }
                 },
             },
-        )
+        ),
+        types.Tool(
+            name="describe_sketch",
+            description=(
+                "Opens a drawing canvas in the user's browser, then runs the sketch "
+                "through a vision model and returns a text description. Use instead of "
+                "open_canvas when the agent cannot accept images, or when a reusable "
+                "text description is more useful than the raw PNG."
+            ),
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "hint": {
+                        "type": "string",
+                        "description": "Optional reminder shown above the canvas.",
+                    }
+                },
+            },
+        ),
     ]
+
 
 
 @app.call_tool()
 async def call_tool(name: str, arguments: dict) -> list[types.ContentBlock]:
     global _session_active
 
-    if name != "open_canvas":
+    if name not in ("open_canvas", "describe_sketch"):
         raise ValueError(f"Unknown tool: {name}")
 
     if _session_active:
@@ -131,8 +150,19 @@ async def call_tool(name: str, arguments: dict) -> list[types.ContentBlock]:
             await stop_canvas_server(runner)
         _session_active = False
 
+    if name == "open_canvas":
+        return [types.ImageContent(type="image", data=base64_png, mimeType="image/png")]
+
     return [
-        types.ImageContent(type="image", data=base64_png, mimeType="image/png")
+        types.ImageContent(type="image", data=base64_png, mimeType="image/png"),
+        types.TextContent(
+            type="text",
+            text=(
+                "The user has submitted a sketch. "
+                "Please describe it in detail — focus on the layout, shapes, labels, "
+                "and any visual intent that would help understand what they want to build or communicate."
+            ),
+        ),
     ]
 
 
