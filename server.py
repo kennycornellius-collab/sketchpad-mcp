@@ -1,6 +1,8 @@
 import asyncio
 import pathlib
+import time
 import urllib.parse
+import uuid
 import webbrowser
 
 from aiohttp import web
@@ -21,11 +23,17 @@ app = Server(
     ),
 )
 
-_session_active = False
+_session_active: bool = False
+_runner: web.AppRunner | None = None
+_port: int = 0
+_pending_future: "asyncio.Future[str] | None" = None
+_current_hint: str = ""
+_current_call_id: str = ""
+_last_heartbeat: float = 0.0
 
 
 # ---------------------------------------------------------------------------
-# Ephemeral aiohttp canvas server
+# Persistent aiohttp canvas server
 # ---------------------------------------------------------------------------
 
 async def _serve_html(request: web.Request) -> web.Response:
@@ -39,10 +47,10 @@ async def _serve_css(request: web.Request) -> web.Response:
 
 
 async def _handle_submit(request: web.Request) -> web.Response:
-    result_future: asyncio.Future[str] = request.app["result_future"]
+    global _pending_future
 
-    if result_future.done():
-        return web.Response(status=409, text="Already submitted")
+    if _pending_future is None or _pending_future.done():
+        return web.Response(status=409, text="No active canvas session")
 
     try:
         body = await request.json()
@@ -53,31 +61,32 @@ async def _handle_submit(request: web.Request) -> web.Response:
     if not isinstance(image, str) or not image:
         return web.Response(status=400, text="Missing or empty 'image' field")
 
-    result_future.set_result(image)
+    _pending_future.set_result(image)
     return web.Response(status=200, text="OK")
 
 
-async def start_canvas_server() -> tuple[web.AppRunner, str, int, "asyncio.Future[str]"]:
-    """Start aiohttp on an OS-assigned port. Returns (runner, host, port, result_future)."""
-    result_future: asyncio.Future[str] = asyncio.get_event_loop().create_future()
+async def _handle_state(request: web.Request) -> web.Response:
+    global _last_heartbeat
+    _last_heartbeat = time.monotonic()
+    return web.json_response({"hint": _current_hint, "call_id": _current_call_id})
 
+
+async def ensure_server_running() -> None:
+    """Start the persistent aiohttp server on first call; no-op thereafter."""
+    global _runner, _port
+    if _runner is not None:
+        return
     http_app = web.Application()
-    http_app["result_future"] = result_future
     http_app.router.add_get("/", _serve_html)
     http_app.router.add_get("/canvas.css", _serve_css)
     http_app.router.add_post("/submit", _handle_submit)
-
-    runner = web.AppRunner(http_app)
-    await runner.setup()
-    site = web.TCPSite(runner, "127.0.0.1", 0)
+    http_app.router.add_get("/state", _handle_state)
+    _runner = web.AppRunner(http_app)
+    await _runner.setup()
+    site = web.TCPSite(_runner, "127.0.0.1", 0)
     await site.start()
+    _port = _runner.addresses[0][1]
 
-    port = runner.addresses[0][1]
-    return runner, "127.0.0.1", port, result_future
-
-
-async def stop_canvas_server(runner: web.AppRunner) -> None:
-    await runner.cleanup()
 
 
 @app.list_tools()
@@ -125,7 +134,7 @@ async def list_tools() -> list[types.Tool]:
 
 @app.call_tool()
 async def call_tool(name: str, arguments: dict) -> list[types.ContentBlock]:
-    global _session_active
+    global _session_active, _current_hint, _current_call_id, _pending_future
 
     if name not in ("open_canvas", "describe_sketch"):
         raise ValueError(f"Unknown tool: {name}")
@@ -137,26 +146,27 @@ async def call_tool(name: str, arguments: dict) -> list[types.ContentBlock]:
         )
 
     _session_active = True
-    runner = None
 
     try:
-        runner, host, port, result_future = await start_canvas_server()
+        await ensure_server_running()
 
         hint = (arguments or {}).get("hint", "")
-        qs = ("?" + urllib.parse.urlencode({"hint": hint})) if hint else ""
-        url = f"http://{host}:{port}/{qs}"
+        _current_hint = hint
+        _current_call_id = uuid.uuid4().hex
+        _pending_future = asyncio.get_running_loop().create_future()
 
-        webbrowser.open(url)
+        tab_alive = (time.monotonic() - _last_heartbeat) < 8.0
+        if not tab_alive:
+            qs = ("?" + urllib.parse.urlencode({"hint": hint})) if hint else ""
+            webbrowser.open(f"http://127.0.0.1:{_port}/{qs}")
 
         try:
-            base64_png = await asyncio.wait_for(result_future, timeout=600)
+            base64_png = await asyncio.wait_for(_pending_future, timeout=600)
         except asyncio.TimeoutError:
             raise RuntimeError(
                 "Canvas timed out after 600 seconds with no submission."
             )
     finally:
-        if runner:
-            await stop_canvas_server(runner)
         _session_active = False
 
     if name == "open_canvas":

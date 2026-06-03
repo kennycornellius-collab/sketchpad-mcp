@@ -71,14 +71,36 @@
 
         if (!res.ok) throw new Error(`Server returned ${res.status}`);
 
-        status.textContent = 'Sent! You can close this tab.';
-        btn.style.display = 'none';
-        window.close();
+        status.textContent = 'Sent! Waiting for Claude to ask for another sketch…';
+        btn.disabled = true;
       } catch (err) {
         status.textContent = `Error: ${err.message}`;
         btn.disabled = false;
       }
     });
+
+    let lastCallId = null;
+
+    async function pollState() {
+      try {
+        const res = await fetch('/state');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.call_id && data.call_id !== lastCallId) {
+          lastCallId = data.call_id;
+          if (data.hint) {
+            hintBar.textContent = data.hint;
+            hintBar.style.display = '';
+          } else {
+            hintBar.style.display = 'none';
+          }
+          btn.disabled = false;
+          status.textContent = '';
+        }
+      } catch (_) {}
+    }
+
+    setInterval(pollState, 1000);
   </script>
 
 </body>
