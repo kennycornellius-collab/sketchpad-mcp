@@ -12,6 +12,7 @@
   <div id="hint-bar"></div>
   <div id="mount"></div>
   <div id="action-bar">
+    <button id="close-btn">Close tab</button>
     <span id="status"></span>
     <button id="send-btn">Send to Claude</button>
   </div>
@@ -101,6 +102,8 @@
     }
 
     setInterval(pollState, 1000);
+
+    document.getElementById('close-btn').addEventListener('click', () => window.close());
   </script>
 
 </body>
