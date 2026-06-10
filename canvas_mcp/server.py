@@ -1,4 +1,7 @@
 import asyncio
+import base64
+import binascii
+import secrets
 import time
 import urllib.parse
 import uuid
@@ -23,10 +26,17 @@ app = Server(
     ),
 )
 
+# Minted once per process and delivered to the page only via the URL passed to
+# webbrowser.open, so other local processes that merely discover the port cannot
+# authenticate against /state, /submit, or /cancel.
+_SESSION_TOKEN = secrets.token_hex(16)
+_PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
+
 _session_active: bool = False
 _runner: web.AppRunner | None = None
 _port: int = 0
-_pending_future: "asyncio.Future[str] | None" = None
+# Resolves to the base64 PNG on submit, or None if the user closed the canvas.
+_pending_future: "asyncio.Future[str | None] | None" = None
 _current_hint: str = ""
 _current_call_id: str = ""
 _last_heartbeat: float = 0.0
@@ -46,8 +56,16 @@ async def _serve_css(request: web.Request) -> web.Response:
     return web.Response(text=css, content_type="text/css")
 
 
+def _token_ok(request: web.Request) -> bool:
+    supplied = request.headers.get("X-Canvas-Token") or request.query.get("token") or ""
+    return secrets.compare_digest(supplied, _SESSION_TOKEN)
+
+
 async def _handle_submit(request: web.Request) -> web.Response:
     global _pending_future
+
+    if not _token_ok(request):
+        return web.Response(status=403, text="Invalid or missing session token")
 
     if _pending_future is None or _pending_future.done():
         return web.Response(status=409, text="No active canvas session")
@@ -61,12 +79,33 @@ async def _handle_submit(request: web.Request) -> web.Response:
     if not isinstance(image, str) or not image:
         return web.Response(status=400, text="Missing or empty 'image' field")
 
+    try:
+        raw = base64.b64decode(image, validate=True)
+    except (binascii.Error, ValueError):
+        return web.Response(status=400, text="'image' is not valid base64")
+
+    if not raw.startswith(_PNG_MAGIC):
+        return web.Response(status=400, text="'image' is not a PNG")
+
     _pending_future.set_result(image)
+    return web.Response(status=200, text="OK")
+
+
+async def _handle_cancel(request: web.Request) -> web.Response:
+    if not _token_ok(request):
+        return web.Response(status=403, text="Invalid or missing session token")
+
+    if _pending_future is not None and not _pending_future.done():
+        _pending_future.set_result(None)
     return web.Response(status=200, text="OK")
 
 
 async def _handle_state(request: web.Request) -> web.Response:
     global _last_heartbeat
+
+    if not _token_ok(request):
+        return web.Response(status=403, text="Invalid or missing session token")
+
     _last_heartbeat = time.monotonic()
     return web.json_response({"hint": _current_hint, "call_id": _current_call_id})
 
@@ -76,10 +115,12 @@ async def ensure_server_running() -> None:
     global _runner, _port
     if _runner is not None:
         return
-    http_app = web.Application()
+    # Base64 PNG of a large pasted screenshot can far exceed aiohttp's 1 MiB default.
+    http_app = web.Application(client_max_size=32 * 1024 * 1024)
     http_app.router.add_get("/", _serve_html)
     http_app.router.add_get("/canvas.css", _serve_css)
     http_app.router.add_post("/submit", _handle_submit)
+    http_app.router.add_post("/cancel", _handle_cancel)
     http_app.router.add_get("/state", _handle_state)
     _runner = web.AppRunner(http_app)
     await _runner.setup()
@@ -157,7 +198,10 @@ async def call_tool(name: str, arguments: dict) -> list[types.ContentBlock]:
 
         tab_alive = (time.monotonic() - _last_heartbeat) < 8.0
         if not tab_alive:
-            qs = ("?" + urllib.parse.urlencode({"hint": hint})) if hint else ""
+            params = {"token": _SESSION_TOKEN}
+            if hint:
+                params["hint"] = hint
+            qs = "?" + urllib.parse.urlencode(params)
             webbrowser.open(f"http://127.0.0.1:{_port}/{qs}")
 
         try:
@@ -168,6 +212,18 @@ async def call_tool(name: str, arguments: dict) -> list[types.ContentBlock]:
             )
     finally:
         _session_active = False
+
+    if base64_png is None:
+        return [
+            types.TextContent(
+                type="text",
+                text=(
+                    "The user closed the canvas without submitting a sketch. "
+                    "This is not an error — they chose not to draw. Continue the "
+                    "conversation without the sketch, or ask how they'd like to proceed."
+                ),
+            )
+        ]
 
     if name == "open_canvas":
         return [types.ImageContent(type="image", data=base64_png, mimeType="image/png")]

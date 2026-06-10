@@ -90,7 +90,7 @@ Use this when you want a reusable text representation of the sketch alongside th
 The canvas is a full Excalidraw instance — shapes, arrows, text, freehand, colors, undo/redo all work. A few things specific to canvas-mcp:
 
 - **Send to Claude** — submits the current canvas state as a PNG
-- **Close tab** — closes the browser tab when you're done with the session
+- **Close tab** — closes the browser tab when you're done with the session. If the agent is waiting on a sketch, closing the tab (button or browser X) tells it immediately that you've declined, instead of leaving it waiting for the timeout
 
 ---
 

@@ -25,7 +25,10 @@
           onerror="console.error('FAILED to load ExcalidrawLib')"></script>
 
   <script>
-    const hint = new URLSearchParams(window.location.search).get('hint');
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token') || '';
+    const cancelUrl = '/cancel?token=' + encodeURIComponent(token);
+    const hint = params.get('hint');
     const hintBar = document.getElementById('hint-bar');
     if (hint) {
       hintBar.textContent = hint;
@@ -66,7 +69,7 @@
 
         const res = await fetch('/submit', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'X-Canvas-Token': token },
           body: JSON.stringify({ image: base64 }),
         });
 
@@ -84,7 +87,7 @@
 
     async function pollState() {
       try {
-        const res = await fetch('/state');
+        const res = await fetch('/state', { headers: { 'X-Canvas-Token': token } });
         if (!res.ok) return;
         const data = await res.json();
         if (data.call_id && data.call_id !== lastCallId) {
@@ -103,7 +106,14 @@
 
     setInterval(pollState, 1000);
 
-    document.getElementById('close-btn').addEventListener('click', () => window.close());
+    document.getElementById('close-btn').addEventListener('click', () => {
+      navigator.sendBeacon(cancelUrl);
+      window.close();
+    });
+
+    // Closing the tab via the browser X (or navigating away) also cancels any
+    // pending call so the agent doesn't wait out the full timeout.
+    window.addEventListener('pagehide', () => navigator.sendBeacon(cancelUrl));
   </script>
 
 </body>
