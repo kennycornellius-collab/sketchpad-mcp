@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [project.scripts]
-canvas-mcp = "server:main"
+canvas-mcp = "canvas_mcp.server:cli"
 
 [tool.hatch.build.targets.wheel]
-include = ["server.py"]
+packages = ["canvas_mcp"]

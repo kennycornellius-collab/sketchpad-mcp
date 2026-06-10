@@ -36,10 +36,10 @@ pip install -e .
 **2. Register with Claude Code**
 
 ```bash
-claude mcp add canvas --transport stdio --scope user -- python /path/to/sketchpad-mcp/server.py
+claude mcp add canvas --transport stdio --scope user -- python -m canvas_mcp
 ```
 
-Replace `/path/to/sketchpad-mcp/server.py` with the absolute path to `server.py` on your machine.
+Use the `python` from the environment where you ran `pip install` (e.g. the absolute path to your venv's `python`). Alternatively, the install provides a `canvas-mcp` console command you can register instead of `python -m canvas_mcp`.
 
 **3. Verify it's registered**
 

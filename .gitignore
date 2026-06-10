@@ -1,1 +1,5 @@
 .venv
+
+canvas_mcp/__pycache__
+
+dist

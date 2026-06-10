@@ -1,16 +1,16 @@
 import asyncio
-import pathlib
 import time
 import urllib.parse
 import uuid
 import webbrowser
+from importlib.resources import files
 
 from aiohttp import web
 from mcp import types
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
 
-BASE_DIR = pathlib.Path(__file__).parent
+_PACKAGE_FILES = files("canvas_mcp")
 
 app = Server(
     "canvas-mcp",
@@ -37,12 +37,12 @@ _last_heartbeat: float = 0.0
 # ---------------------------------------------------------------------------
 
 async def _serve_html(request: web.Request) -> web.Response:
-    html = (BASE_DIR / "canvas.html").read_text(encoding="utf-8")
+    html = (_PACKAGE_FILES / "canvas.html").read_text(encoding="utf-8")
     return web.Response(text=html, content_type="text/html")
 
 
 async def _serve_css(request: web.Request) -> web.Response:
-    css = (BASE_DIR / "canvas.css").read_text(encoding="utf-8")
+    css = (_PACKAGE_FILES / "canvas.css").read_text(encoding="utf-8")
     return web.Response(text=css, content_type="text/css")
 
 
@@ -190,5 +190,10 @@ async def main() -> None:
         await app.run(read_stream, write_stream, app.create_initialization_options())
 
 
-if __name__ == "__main__":
+def cli() -> None:
+    """Synchronous entry point for the canvas-mcp console script."""
     asyncio.run(main())
+
+
+if __name__ == "__main__":
+    cli()
