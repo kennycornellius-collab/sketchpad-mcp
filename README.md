@@ -1,4 +1,4 @@
-# canvas-mcp
+# sketchpad-mcp
 
 A visual input tool for AI coding agents. You sketch; the agent reads the sketch.
 
