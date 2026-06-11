@@ -75,6 +75,9 @@ async def _handle_submit(request: web.Request) -> web.Response:
     except Exception:
         return web.Response(status=400, text="Invalid JSON")
 
+    if not isinstance(body, dict):
+        return web.Response(status=400, text="Body must be a JSON object")
+
     image = body.get("image")
     if not isinstance(image, str) or not image:
         return web.Response(status=400, text="Missing or empty 'image' field")

@@ -98,6 +98,17 @@ async def test_submit_invalid_json_is_400(client, pending_future, body):
 
 
 @pytest.mark.parametrize("payload", [
+    [1, 2, 3],
+    "just a string",
+    42,
+])
+async def test_submit_non_object_json_is_400(client, pending_future, payload):
+    resp = await client.post("/submit", headers=TOKEN_HEADER, json=payload)
+    assert resp.status == 400
+    assert not pending_future.done()
+
+
+@pytest.mark.parametrize("payload", [
     {},
     {"image": ""},
     {"image": 12345},
