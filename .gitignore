@@ -1,5 +1,5 @@
 .venv
 
 canvas_mcp/__pycache__
-
+tests/__pycache__
 dist

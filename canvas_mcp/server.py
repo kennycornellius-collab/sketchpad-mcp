@@ -110,11 +110,7 @@ async def _handle_state(request: web.Request) -> web.Response:
     return web.json_response({"hint": _current_hint, "call_id": _current_call_id})
 
 
-async def ensure_server_running() -> None:
-    """Start the persistent aiohttp server on first call; no-op thereafter."""
-    global _runner, _port
-    if _runner is not None:
-        return
+def _build_app() -> web.Application:
     # Base64 PNG of a large pasted screenshot can far exceed aiohttp's 1 MiB default.
     http_app = web.Application(client_max_size=32 * 1024 * 1024)
     http_app.router.add_get("/", _serve_html)
@@ -122,7 +118,15 @@ async def ensure_server_running() -> None:
     http_app.router.add_post("/submit", _handle_submit)
     http_app.router.add_post("/cancel", _handle_cancel)
     http_app.router.add_get("/state", _handle_state)
-    _runner = web.AppRunner(http_app)
+    return http_app
+
+
+async def ensure_server_running() -> None:
+    """Start the persistent aiohttp server on first call; no-op thereafter."""
+    global _runner, _port
+    if _runner is not None:
+        return
+    _runner = web.AppRunner(_build_app())
     await _runner.setup()
     site = web.TCPSite(_runner, "127.0.0.1", 0)
     await site.start()
