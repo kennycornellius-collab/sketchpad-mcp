@@ -1,6 +1,6 @@
 # sketchpad-mcp
 
-[![CI](https://github.com/kennycornellius-collab/sketchpad-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/kennycornellius-collab/sketchpad-mcp/actions/workflows/ci.yml)
+[![CI](https://github.com/kennycornellius-collab/sketchpad-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/kennycornellius-collab/sketchpad-mcp/actions/workflows/ci.yml) [![PyPI](https://img.shields.io/pypi/v/sketchpad-mcp)](https://pypi.org/project/sketchpad-mcp/)
 
 A visual input tool for AI coding agents. You sketch; the agent reads the sketch.
 
@@ -27,29 +27,39 @@ Most MCP drawing tools go **agent → human** (the agent generates a diagram for
 
 ## Installation
 
-**1. Clone and install dependencies**
+**Easiest — with [uv](https://docs.astral.sh/uv/) (no install step at all):**
 
 ```bash
-git clone https://github.com/kennycornellius-collab/sketchpad-mcp.git
-cd sketchpad-mcp
-pip install -e .
+claude mcp add sketchpad --transport stdio --scope user -- uvx sketchpad-mcp
 ```
 
-**2. Register with Claude Code**
+`uvx` fetches the package from PyPI on first run and keeps it cached.
+
+**Or with pip:**
 
 ```bash
-claude mcp add sketchpad --transport stdio --scope user -- python -m sketchpad_mcp
+pip install sketchpad-mcp
+claude mcp add sketchpad --transport stdio --scope user -- sketchpad-mcp
 ```
 
-Use the `python` from the environment where you ran `pip install` (e.g. the absolute path to your venv's `python`). Alternatively, the install provides a `sketchpad-mcp` console command you can register instead of `python -m sketchpad_mcp`.
+If `sketchpad-mcp` isn't on your PATH (e.g. installed inside a venv), register the absolute path to the executable, or use `python -m sketchpad_mcp` with that environment's `python`.
 
-**3. Verify it's registered**
+**Verify it's registered:**
 
 ```bash
 claude mcp list
 ```
 
 You should see `sketchpad` in the list.
+
+**From source (for development):**
+
+```bash
+git clone https://github.com/kennycornellius-collab/sketchpad-mcp.git
+cd sketchpad-mcp
+pip install -e ".[dev]"
+pytest  # run the test suite
+```
 
 ---
 
