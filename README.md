@@ -36,10 +36,10 @@ pip install -e .
 **2. Register with Claude Code**
 
 ```bash
-claude mcp add canvas --transport stdio --scope user -- python -m canvas_mcp
+claude mcp add sketchpad --transport stdio --scope user -- python -m sketchpad_mcp
 ```
 
-Use the `python` from the environment where you ran `pip install` (e.g. the absolute path to your venv's `python`). Alternatively, the install provides a `canvas-mcp` console command you can register instead of `python -m canvas_mcp`.
+Use the `python` from the environment where you ran `pip install` (e.g. the absolute path to your venv's `python`). Alternatively, the install provides a `sketchpad-mcp` console command you can register instead of `python -m sketchpad_mcp`.
 
 **3. Verify it's registered**
 
@@ -47,7 +47,7 @@ Use the `python` from the environment where you ran `pip install` (e.g. the abso
 claude mcp list
 ```
 
-You should see `canvas` in the list.
+You should see `sketchpad` in the list.
 
 ---
 
@@ -79,15 +79,15 @@ Use this when the agent can accept images (Claude Code always can).
 
 ### `describe_sketch`
 
-Same canvas flow, but returns the PNG **and** a text description of what you drew.
+Same canvas flow, but returns the PNG **plus a prompt asking the agent to describe what you drew** — the description is produced by the agent's own vision, no extra API key needed.
 
-Use this when you want a reusable text representation of the sketch alongside the image — useful for saving the description to a file or passing it to a non-vision step later.
+Use this when you want a reusable text representation of the sketch alongside the image — useful for saving the description to a file or passing it to a non-vision step later. Requires a vision-capable agent (Claude Code always is).
 
 ---
 
 ## Canvas controls
 
-The canvas is a full Excalidraw instance — shapes, arrows, text, freehand, colors, undo/redo all work. A few things specific to canvas-mcp:
+The canvas is a full Excalidraw instance — shapes, arrows, text, freehand, colors, undo/redo all work. A few things specific to sketchpad-mcp:
 
 - **Send to Claude** — submits the current canvas state as a PNG
 - **Close tab** — closes the browser tab when you're done with the session. If the agent is waiting on a sketch, closing the tab (button or browser X) tells it immediately that you've declined, instead of leaving it waiting for the timeout
@@ -104,4 +104,4 @@ Built with assistance from [Claude Code](https://claude.ai/code). Excalidraw emb
 
 ## Other clients
 
-canvas-mcp uses standard MCP stdio transport, so it should work with Cursor, Zed, Claude Desktop, and any other MCP-compatible coding agent. If you try it on one of those and want to help document the setup, feel free to open an issue or reach out — happy to add verified setup snippets for other clients.
+sketchpad-mcp uses standard MCP stdio transport, so it should work with Cursor, Zed, Claude Desktop, and any other MCP-compatible coding agent. If you try it on one of those and want to help document the setup, feel free to open an issue or reach out — happy to add verified setup snippets for other clients.

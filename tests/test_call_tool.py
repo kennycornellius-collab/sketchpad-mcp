@@ -5,7 +5,7 @@ import time
 import pytest
 from mcp import types
 
-import canvas_mcp.server as server
+import sketchpad_mcp.server as server
 
 VALID_PNG_B64 = base64.b64encode(server._PNG_MAGIC + b"\x00" * 16).decode()
 

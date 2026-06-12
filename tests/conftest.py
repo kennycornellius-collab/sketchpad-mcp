@@ -1,6 +1,6 @@
 import pytest
 
-import canvas_mcp.server as server
+import sketchpad_mcp.server as server
 
 
 def _reset_state() -> None:

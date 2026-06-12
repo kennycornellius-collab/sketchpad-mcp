@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "canvas-mcp"
+name = "sketchpad-mcp"
 version = "0.1.0"
 description = "MCP server that opens a drawing canvas in the browser and returns the sketch as an image"
 requires-python = ">=3.10"
@@ -19,10 +19,10 @@ dev = [
 ]
 
 [project.scripts]
-canvas-mcp = "canvas_mcp.server:cli"
+sketchpad-mcp = "sketchpad_mcp.server:cli"
 
 [tool.hatch.build.targets.wheel]
-packages = ["canvas_mcp"]
+packages = ["sketchpad_mcp"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

@@ -3,7 +3,7 @@ import base64
 
 import pytest
 
-import canvas_mcp.server as server
+import sketchpad_mcp.server as server
 
 TOKEN_HEADER = {"X-Canvas-Token": server._SESSION_TOKEN}
 WRONG_TOKEN_HEADER = {"X-Canvas-Token": "0" * 32}

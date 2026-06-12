@@ -13,14 +13,15 @@ from mcp import types
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
 
-_PACKAGE_FILES = files("canvas_mcp")
+_PACKAGE_FILES = files("sketchpad_mcp")
 
 app = Server(
-    "canvas-mcp",
+    "sketchpad-mcp",
     instructions=(
         "This server opens a drawing canvas in the user's browser and returns the sketch "
         "to the agent. Use open_canvas to receive the raw image, or describe_sketch to "
-        "receive a text description. Invoke either tool when the user's visual intent is "
+        "receive the image plus a prompt to produce a text description of it. Invoke "
+        "either tool when the user's visual intent is "
         "ambiguous, when they want to sketch a UI layout or diagram, annotate an image, "
         "or communicate anything that is faster to draw than to describe in words."
     ),
@@ -161,10 +162,11 @@ async def list_tools() -> list[types.Tool]:
         types.Tool(
             name="describe_sketch",
             description=(
-                "Opens a drawing canvas in the user's browser, then runs the sketch "
-                "through a vision model and returns a text description. Use instead of "
-                "open_canvas when the agent cannot accept images, or when a reusable "
-                "text description is more useful than the raw PNG."
+                "Opens a drawing canvas in the user's browser, then returns the sketch "
+                "image together with a prompt instructing the agent to describe it in "
+                "text. Use instead of open_canvas when a reusable text description of "
+                "the sketch is useful alongside the image — e.g. to save to a file or "
+                "pass to a later non-vision step. Requires a vision-capable agent."
             ),
             inputSchema={
                 "type": "object",
@@ -254,7 +256,7 @@ async def main() -> None:
 
 
 def cli() -> None:
-    """Synchronous entry point for the canvas-mcp console script."""
+    """Synchronous entry point for the sketchpad-mcp console script."""
     asyncio.run(main())
 
 
