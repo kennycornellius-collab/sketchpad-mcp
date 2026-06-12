@@ -1,5 +1,7 @@
 # sketchpad-mcp
 
+[![CI](https://github.com/kennycornellius-collab/sketchpad-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/kennycornellius-collab/sketchpad-mcp/actions/workflows/ci.yml)
+
 A visual input tool for AI coding agents. You sketch; the agent reads the sketch.
 
 Most MCP drawing tools go **agent → human** (the agent generates a diagram for you to view). This one goes the other way: **human → agent**. Open a canvas, draw your idea, and the resulting image lands directly in the agent's context.
