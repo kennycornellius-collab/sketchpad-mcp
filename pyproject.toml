@@ -4,13 +4,34 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sketchpad-mcp"
-version = "0.1.0"
+version = "1.0.0"
 description = "MCP server that opens a drawing canvas in the browser and returns the sketch as an image"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Kenny Cornellius" }]
+keywords = ["mcp", "model-context-protocol", "sketch", "excalidraw", "claude", "drawing", "canvas"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: User Interfaces",
+]
 requires-python = ">=3.10"
 dependencies = [
     "mcp>=1.0,<2",
     "aiohttp>=3.9,<4",
 ]
+
+[project.urls]
+Homepage = "https://github.com/kennycornellius-collab/sketchpad-mcp"
+Repository = "https://github.com/kennycornellius-collab/sketchpad-mcp"
+Issues = "https://github.com/kennycornellius-collab/sketchpad-mcp/issues"
 
 [project.optional-dependencies]
 dev = [
